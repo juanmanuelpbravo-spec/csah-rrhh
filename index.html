@@ -217,6 +217,37 @@
     .bd-lista-contenedor{ padding:18px 12px; }
   }
 
+  /* ============ ADMINISTRACIÓN ============ */
+  #vista-admin{ min-height:100vh; background:var(--fondo); padding:34px 22px 50px; }
+  .admin-wrap{ max-width:1180px; margin:0 auto; }
+  .admin-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:18px; margin-bottom:22px; }
+  .admin-head h1{ margin:0 0 5px; color:var(--azul-oscuro); font-size:24px; }
+  .admin-head p{ margin:0; color:var(--texto-suave); font-size:13px; }
+  .admin-card{ background:#fff; border:1px solid var(--gris-borde); border-radius:14px; padding:20px; box-shadow:0 5px 18px rgba(19,36,68,.06); margin-bottom:18px; }
+  .admin-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .admin-campo label{ display:block; font-size:12px; font-weight:700; color:var(--azul-oscuro); margin-bottom:6px; }
+  .admin-campo input,.admin-campo select{ width:100%; padding:10px 11px; border:1px solid #cfd5df; border-radius:8px; font-size:13px; }
+  .admin-btn{ border:0; border-radius:8px; padding:10px 14px; font-weight:800; cursor:pointer; }
+  .admin-btn-primary{ background:var(--azul-oscuro); color:#fff; }
+  .admin-btn-green{ background:#1a7a3c; color:#fff; }
+  .admin-btn-danger{ background:#fff1f0; color:#b42318; border:1px solid #f0c7c2; }
+  .admin-btn:disabled{ opacity:.6; cursor:wait; }
+  .admin-msg{ margin-top:10px; font-size:12px; min-height:18px; }
+  .admin-table-wrap{ overflow-x:auto; }
+  .admin-table{ width:100%; border-collapse:collapse; font-size:12px; }
+  .admin-table th{ background:#f5f7fa; color:var(--azul-oscuro); text-align:left; padding:10px 9px; border-bottom:1px solid var(--gris-borde); }
+  .admin-table td{ padding:10px 9px; border-bottom:1px solid #e7e9ed; vertical-align:middle; }
+  .admin-rol{ display:inline-block; padding:4px 8px; border-radius:999px; font-size:11px; font-weight:800; }
+  .rol-admin{ background:#fff4d6; color:#8a5b00; }
+  .rol-rrhh{ background:#e8f0ff; color:#244f91; }
+  .rol-consulta{ background:#edf1f5; color:#4e5868; }
+  .rol-inactivo{ background:#fff1f0; color:#b42318; }
+  .admin-actions{ display:flex; flex-wrap:wrap; gap:6px; }
+  .admin-actions button{ border:1px solid #d7dce4; background:#fff; border-radius:7px; padding:6px 8px; cursor:pointer; font-size:11px; }
+  .admin-notice{ padding:12px 14px; background:#fff8e6; border:1px solid #f0d68a; border-radius:9px; color:#6f5200; font-size:12px; line-height:1.5; }
+  .admin-stat{ display:inline-flex; align-items:center; gap:7px; margin-right:14px; font-size:12px; color:var(--texto-suave); }
+  @media(max-width:760px){ .admin-grid{grid-template-columns:1fr;} .admin-head{flex-direction:column;} }
+
   /* ============ AUTENTICACIÓN FIREBASE ============ */
   body.auth-bloqueado > *:not(#pantalla-login){ display:none !important; }
   #pantalla-login{
@@ -301,6 +332,47 @@
     </div>
   </div>
   <button class="boton-bd-esquina" onclick="mostrarVista('vista-bd')" title="Base de datos de trabajadores">🗂️ Base de Datos</button>
+  <button id="boton-admin" class="boton-bd-esquina" style="right:145px;display:none" onclick="mostrarVista('vista-admin')" title="Administración">⚙️ Administración</button>
+</div>
+
+<!-- ===================== VISTA: ADMINISTRACIÓN ===================== -->
+<div id="vista-admin" class="oculto">
+  <div class="admin-wrap">
+    <div class="admin-head">
+      <div>
+        <button class="btn-volver" onclick="mostrarVista('vista-inicio')">← Volver al menú</button>
+        <h1>⚙️ Administración del sistema</h1>
+        <p>Gestión de usuarios, roles y acceso al sistema RR.HH. CSAH.</p>
+      </div>
+      <div><span class="admin-stat">👑 <b id="admin-usuario-activo">Administrador</b></span><span class="admin-stat">👥 <b id="admin-total-usuarios">0</b> usuarios</span></div>
+    </div>
+
+    <div class="admin-card">
+      <h2 style="margin:0 0 14px;font-size:16px;color:var(--azul-oscuro)">➕ Agregar usuario</h2>
+      <div class="admin-grid">
+        <div class="admin-campo"><label>Nombre</label><input id="adm-nombre" type="text" placeholder="Nombre del usuario"></div>
+        <div class="admin-campo"><label>Correo</label><input id="adm-email" type="email" placeholder="usuario@colegio.cl"></div>
+        <div class="admin-campo"><label>Contraseña inicial</label><input id="adm-password" type="password" minlength="6" placeholder="Mínimo 6 caracteres"></div>
+        <div class="admin-campo"><label>Rol</label><select id="adm-rol"><option value="rrhh">🧑‍💼 RRHH — puede editar trabajadores</option><option value="consulta">👁️ Consulta — solo lectura</option><option value="admin">👑 Administrador — acceso total</option></select></div>
+      </div>
+      <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+        <button id="adm-btn-crear" class="admin-btn admin-btn-primary" type="button">Crear usuario</button>
+        <button id="adm-btn-limpiar" class="admin-btn" type="button" style="background:#eef1f5;color:#24324b">Limpiar</button>
+      </div>
+      <div id="adm-msg-crear" class="admin-msg"></div>
+    </div>
+
+    <div class="admin-card">
+      <h2 style="margin:0 0 14px;font-size:16px;color:var(--azul-oscuro)">👥 Usuarios del sistema</h2>
+      <div class="admin-notice" style="margin-bottom:14px">Los usuarios se crean en Firebase Authentication y su rol se guarda en Firestore. Puedes cambiar el rol, activar/desactivar el acceso y enviar un enlace para restablecer la contraseña.</div>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr></thead>
+          <tbody id="admin-tabla-usuarios"><tr><td colspan="5">Cargando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- ===================== VISTA: CARTA DE AMONESTACIÓN ===================== -->
@@ -531,14 +603,14 @@
 
 <!-- Firebase (base de datos de trabajadores) -->
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import {
     getFirestore, collection, addDoc, updateDoc, deleteDoc, doc,
-    onSnapshot, query, orderBy, getDocs, writeBatch
+    onSnapshot, query, orderBy, getDocs, writeBatch, getDoc, setDoc
   } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
   import {
     getAuth, onAuthStateChanged, signInWithEmailAndPassword,
-    sendPasswordResetEmail, signOut
+    sendPasswordResetEmail, signOut, createUserWithEmailAndPassword
   } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
   const firebaseConfig = {
@@ -550,8 +622,10 @@
     appId: "1:125001360350:web:40e97ece5cb787a3eeb34f"
   };
 
-  let db, trabajadoresRef, auth;
+  let db, trabajadoresRef, usuariosRef, auth, secondaryAuth;
   let listaCompleta = [];
+  let perfilActual = null;
+  let usuariosSistema = [];
   let unsubscribeTrabajadores = null;
 
   const loginPantalla = document.getElementById('pantalla-login');
@@ -564,6 +638,7 @@
   const loginActivo = document.getElementById('login-usuario-activo');
   const loginCorreoActivo = document.getElementById('login-correo-activo');
   const loginSalir = document.getElementById('login-salir');
+  const botonAdmin = document.getElementById('boton-admin');
 
   function loginMostrarError(mensaje){
     loginError.textContent = mensaje;
@@ -597,6 +672,9 @@
     db = getFirestore(app);
     auth = getAuth(app);
     trabajadoresRef = collection(db, "trabajadores");
+    usuariosRef = collection(db, "usuarios");
+    const secondaryApp = initializeApp(firebaseConfig, "rrhhUserCreation");
+    secondaryAuth = getAuth(secondaryApp);
 
     function iniciarEscuchaTrabajadores(){
       if (unsubscribeTrabajadores) unsubscribeTrabajadores();
@@ -620,14 +698,95 @@
       });
     }
 
-    onAuthStateChanged(auth, (user) => {
+    async function cargarPerfilActual(user){
+      const ref = doc(db, "usuarios", user.uid);
+      const snap = await getDoc(ref);
+      perfilActual = snap.exists() ? { id: snap.id, ...snap.data() } : null;
+      const esAdmin = perfilActual?.rol === 'admin' && perfilActual?.estado !== 'inactivo';
+      botonAdmin.style.display = esAdmin ? 'block' : 'none';
+      loginCorreoActivo.textContent = `${user.email || 'Usuario'}${perfilActual?.rol ? ' · ' + perfilActual.rol.toUpperCase() : ''}`;
+      if (esAdmin) {
+        document.getElementById('admin-usuario-activo').textContent = perfilActual.nombre || user.email || 'Administrador';
+        await adminCargarUsuarios();
+      }
+      return esAdmin;
+    }
+
+    async function adminCargarUsuarios(){
+      if (!perfilActual || perfilActual.rol !== 'admin') return;
+      const tbody = document.getElementById('admin-tabla-usuarios');
+      try {
+        const snap = await getDocs(query(usuariosRef, orderBy('nombre')));
+        usuariosSistema = [];
+        snap.forEach(d => usuariosSistema.push({id:d.id, ...d.data()}));
+        document.getElementById('admin-total-usuarios').textContent = usuariosSistema.length;
+        tbody.innerHTML = usuariosSistema.length ? usuariosSistema.map(u => {
+          const rol = u.rol || 'consulta';
+          const estado = u.estado || 'activo';
+          const rolClass = rol === 'admin' ? 'rol-admin' : rol === 'rrhh' ? 'rol-rrhh' : 'rol-consulta';
+          return `<tr>
+            <td>${adminEsc(u.nombre || '')}</td>
+            <td>${adminEsc(u.email || '')}</td>
+            <td><span class="admin-rol ${rolClass}">${rol==='admin'?'👑 ADMIN':rol==='rrhh'?'🧑‍💼 RRHH':'👁️ CONSULTA'}</span></td>
+            <td><span class="admin-rol ${estado==='inactivo'?'rol-inactivo':'rol-consulta'}">${estado==='inactivo'?'🔴 Inactivo':'🟢 Activo'}</span></td>
+            <td><div class="admin-actions">
+              ${u.id === auth.currentUser?.uid ? '<button disabled>Cuenta actual</button>' : `<button onclick="adminCambiarRol('${u.id}')">✏️ Rol</button><button onclick="adminCambiarEstado('${u.id}')">${estado==='inactivo'?'🟢 Activar':'🔴 Desactivar'}</button><button onclick="adminReset('${adminEscAttr(u.email || '')}')">🔑 Reset clave</button>`}
+            </div></td>
+          </tr>`;
+        }).join('') : '<tr><td colspan="5">No hay perfiles creados todavía.</td></tr>';
+      } catch(e){
+        tbody.innerHTML = `<tr><td colspan="5">🔴 ${adminEsc(e.message)}</td></tr>`;
+      }
+    }
+
+    function adminEsc(v){ const d=document.createElement('div'); d.textContent=v||''; return d.innerHTML; }
+    function adminEscAttr(v){ return String(v||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+
+    window.adminCambiarRol = async function(uid){
+      if (perfilActual?.rol !== 'admin') return alert('No tienes permisos de administrador.');
+      const u = usuariosSistema.find(x=>x.id===uid); if(!u) return;
+      const nuevo = prompt('Nuevo rol: admin, rrhh o consulta', u.rol || 'consulta');
+      if (!nuevo || !['admin','rrhh','consulta'].includes(nuevo.trim().toLowerCase())) return alert('Rol no válido.');
+      if (uid === auth.currentUser.uid && nuevo.trim().toLowerCase() !== 'admin') return alert('No puedes quitarte el rol de administrador desde tu propia cuenta.');
+      await updateDoc(doc(db,'usuarios',uid), {rol:nuevo.trim().toLowerCase()});
+      await adminCargarUsuarios();
+    };
+
+    window.adminCambiarEstado = async function(uid){
+      if (perfilActual?.rol !== 'admin') return alert('No tienes permisos de administrador.');
+      if (uid === auth.currentUser.uid) return alert('No puedes desactivar tu propia cuenta.');
+      const u = usuariosSistema.find(x=>x.id===uid); if(!u) return;
+      const nuevo = (u.estado || 'activo') === 'activo' ? 'inactivo' : 'activo';
+      if (!confirm(`${nuevo==='inactivo'?'¿Desactivar':'¿Activar'} a ${u.email}?`)) return;
+      await updateDoc(doc(db,'usuarios',uid), {estado:nuevo});
+      await adminCargarUsuarios();
+    };
+
+    window.adminReset = async function(email){
+      if (perfilActual?.rol !== 'admin') return alert('No tienes permisos de administrador.');
+      try { await sendPasswordResetEmail(auth, email); alert('Se envió el enlace de recuperación a ' + email); }
+      catch(e){ alert('No se pudo enviar: ' + e.message); }
+    };
+
+    onAuthStateChanged(auth, async (user) => {
       if (user) {
-        document.body.classList.remove('auth-bloqueado');
-        loginPantalla.style.display = 'none';
-        loginActivo.style.display = 'flex';
-        loginCorreoActivo.textContent = user.email || 'Usuario autorizado';
-        loginLimpiarError();
-        iniciarEscuchaTrabajadores();
+        try {
+          const esAdmin = await cargarPerfilActual(user);
+          const estadoUsuario = perfilActual?.estado || 'activo';
+          if (estadoUsuario === 'inactivo') {
+            loginMostrarError('Tu usuario está desactivado. Contacta al administrador.');
+            await signOut(auth);
+            return;
+          }
+          document.body.classList.remove('auth-bloqueado');
+          loginPantalla.style.display = 'none';
+          loginActivo.style.display = 'flex';
+          loginLimpiarError();
+          iniciarEscuchaTrabajadores();
+        } catch(e) {
+          loginMostrarError('Tu cuenta existe, pero todavía no tiene un perfil autorizado en el sistema. Contacta al administrador.');
+          console.error(e);
+        }
       } else {
         document.body.classList.add('auth-bloqueado');
         loginPantalla.style.display = 'flex';
@@ -682,6 +841,36 @@
 
   loginSalir.addEventListener('click', async () => {
     await signOut(auth);
+  });
+
+  document.getElementById('adm-btn-limpiar').addEventListener('click', () => {
+    ['adm-nombre','adm-email','adm-password'].forEach(id => document.getElementById(id).value='');
+    document.getElementById('adm-rol').value='rrhh';
+    document.getElementById('adm-msg-crear').textContent='';
+  });
+
+  document.getElementById('adm-btn-crear').addEventListener('click', async () => {
+    if (perfilActual?.rol !== 'admin') return alert('No tienes permisos de administrador.');
+    const nombre=document.getElementById('adm-nombre').value.trim();
+    const email=document.getElementById('adm-email').value.trim().toLowerCase();
+    const password=document.getElementById('adm-password').value;
+    const rol=document.getElementById('adm-rol').value;
+    const msg=document.getElementById('adm-msg-crear');
+    const btn=document.getElementById('adm-btn-crear');
+    if(!nombre || !email || password.length < 6) { msg.style.color='#b42318'; msg.textContent='Completa nombre, correo y una contraseña de al menos 6 caracteres.'; return; }
+    btn.disabled=true; msg.style.color='#5b626f'; msg.textContent='⏳ Creando usuario...';
+    try {
+      const cred=await createUserWithEmailAndPassword(secondaryAuth,email,password);
+      await setDoc(doc(db,'usuarios',cred.user.uid), {nombre,email,rol,estado:'activo',creadoEn:new Date().toISOString(),creadoPor:auth.currentUser.uid});
+      await signOut(secondaryAuth);
+      msg.style.color='#146c2e'; msg.textContent='✅ Usuario creado correctamente.';
+      ['adm-nombre','adm-email','adm-password'].forEach(id => document.getElementById(id).value='');
+      document.getElementById('adm-rol').value='rrhh';
+      await adminCargarUsuarios();
+    } catch(e) {
+      msg.style.color='#b42318';
+      msg.textContent = e.code === 'auth/email-already-in-use' ? 'Ese correo ya existe en Firebase Authentication.' : 'No se pudo crear: ' + e.message;
+    } finally { btn.disabled=false; }
   });
 
   // Nómina oficial cargada desde "NOMINA CSAH V2.xlsx" (101 funcionarios)
@@ -843,13 +1032,14 @@
 <script>
   // ============ NAVEGACIÓN ENTRE VISTAS ============
   function mostrarVista(id){
-    ['vista-inicio','vista-amonestacion','vista-acta','vista-bd'].forEach(v=>{
+    ['vista-inicio','vista-amonestacion','vista-acta','vista-bd','vista-admin'].forEach(v=>{
       document.getElementById(v).classList.toggle('oculto', v !== id);
     });
     window.scrollTo(0,0);
     if(id === 'vista-amonestacion'){ amActualizar(); amAjustarEscala(); }
     if(id === 'vista-acta'){ acAjustarEscala(); }
     if(id === 'vista-bd'){ bdCargarLista(); }
+    if(id === 'vista-admin'){ if (perfilActual?.rol === 'admin') adminCargarUsuarios(); else mostrarVista('vista-inicio'); }
   }
 </script>
 
