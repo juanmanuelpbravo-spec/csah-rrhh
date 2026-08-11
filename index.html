@@ -216,9 +216,67 @@
     .panel-bd{ border-right:none; border-bottom:1px solid var(--gris-borde); }
     .bd-lista-contenedor{ padding:18px 12px; }
   }
+
+  /* ============ AUTENTICACIÓN FIREBASE ============ */
+  body.auth-bloqueado > *:not(#pantalla-login){ display:none !important; }
+  #pantalla-login{
+    position:fixed; inset:0; z-index:99999; display:flex; align-items:center; justify-content:center;
+    padding:24px; background:linear-gradient(135deg,#eef2f7,#f8fafc);
+  }
+  .login-card{
+    width:min(420px,100%); background:#fff; border:1px solid #e5e7eb; border-radius:16px;
+    box-shadow:0 18px 50px rgba(15,23,42,.14); padding:34px 30px;
+  }
+  .login-logo{ text-align:center; margin-bottom:22px; }
+  .login-logo .icon{ font-size:42px; }
+  .login-logo h1{ margin:8px 0 4px; color:var(--azul-oscuro); font-size:23px; }
+  .login-logo p{ margin:0; color:var(--texto-suave); font-size:12.5px; line-height:1.45; }
+  .login-campo{ margin-bottom:15px; }
+  .login-campo label{ display:block; margin-bottom:6px; font-weight:700; font-size:13px; color:#25324a; }
+  .login-campo input{ width:100%; box-sizing:border-box; padding:12px 13px; border:1px solid #cfd5df; border-radius:8px; font-size:14px; outline:none; }
+  .login-campo input:focus{ border-color:#294a7a; box-shadow:0 0 0 3px rgba(41,74,122,.10); }
+  #login-btn{ width:100%; border:0; border-radius:8px; padding:13px; background:#14284d; color:#fff; font-size:14px; font-weight:800; cursor:pointer; }
+  #login-btn:disabled{ opacity:.65; cursor:wait; }
+  #login-error{ min-height:20px; margin:12px 0 0; color:#b42318; background:#fff1f0; border-radius:7px; padding:8px 10px; font-size:12px; line-height:1.4; display:none; }
+  #login-recuperar{ display:block; margin:13px auto 0; border:0; background:none; color:#294a7a; cursor:pointer; font-size:12px; text-decoration:underline; }
+  #login-usuario-activo{ position:fixed; top:12px; right:14px; z-index:9998; display:none; align-items:center; gap:8px; background:#fff; border:1px solid #d9dee7; border-radius:999px; box-shadow:0 3px 14px rgba(0,0,0,.10); padding:7px 9px 7px 12px; font-size:11px; color:#39445a; }
+  #login-usuario-activo button{ border:0; border-radius:999px; background:#eef1f5; color:#24324b; padding:6px 9px; cursor:pointer; font-weight:700; }
+  @media(max-width:500px){ .login-card{ padding:28px 20px; } }
+  @media print{ #pantalla-login,#login-usuario-activo{ display:none !important; } }
+
 </style>
 </head>
-<body>
+<body class="auth-bloqueado">
+
+<!-- ===================== AUTENTICACIÓN ===================== -->
+<div id="pantalla-login">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="icon">🔐</div>
+      <h1>Recursos Humanos CSAH</h1>
+      <p>Acceso privado al sistema de documentos y base de datos de trabajadores.</p>
+    </div>
+    <form id="form-login" autocomplete="on">
+      <div class="login-campo">
+        <label for="login-email">Correo / usuario</label>
+        <input type="email" id="login-email" autocomplete="username" placeholder="usuario@colegio.cl" required>
+      </div>
+      <div class="login-campo">
+        <label for="login-password">Contraseña</label>
+        <input type="password" id="login-password" autocomplete="current-password" placeholder="••••••••" required>
+      </div>
+      <button id="login-btn" type="submit">🔓 Ingresar al sistema</button>
+      <div id="login-error"></div>
+      <button id="login-recuperar" type="button">¿Olvidaste tu contraseña?</button>
+    </form>
+  </div>
+</div>
+
+<div id="login-usuario-activo">
+  <span id="login-correo-activo"></span>
+  <button id="login-salir" type="button">Cerrar sesión</button>
+</div>
+
 
 <!-- ===================== VISTA: INICIO / DASHBOARD ===================== -->
 <div id="vista-inicio">
@@ -478,8 +536,11 @@
     getFirestore, collection, addDoc, updateDoc, deleteDoc, doc,
     onSnapshot, query, orderBy, getDocs, writeBatch
   } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import {
+    getAuth, onAuthStateChanged, signInWithEmailAndPassword,
+    sendPasswordResetEmail, signOut
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-  // ⚠️ Reemplaza este objeto con el firebaseConfig real de tu proyecto
   const firebaseConfig = {
     apiKey: "AIzaSyA83xp2kFRpd_p6LIiMQWclibFENeD79L8",
     authDomain: "csah-rrhh.firebaseapp.com",
@@ -489,31 +550,139 @@
     appId: "1:125001360350:web:40e97ece5cb787a3eeb34f"
   };
 
-  let db, trabajadoresRef;
+  let db, trabajadoresRef, auth;
   let listaCompleta = [];
+  let unsubscribeTrabajadores = null;
+
+  const loginPantalla = document.getElementById('pantalla-login');
+  const loginForm = document.getElementById('form-login');
+  const loginEmail = document.getElementById('login-email');
+  const loginPassword = document.getElementById('login-password');
+  const loginBtn = document.getElementById('login-btn');
+  const loginError = document.getElementById('login-error');
+  const loginRecuperar = document.getElementById('login-recuperar');
+  const loginActivo = document.getElementById('login-usuario-activo');
+  const loginCorreoActivo = document.getElementById('login-correo-activo');
+  const loginSalir = document.getElementById('login-salir');
+
+  function loginMostrarError(mensaje){
+    loginError.textContent = mensaje;
+    loginError.style.display = 'block';
+    loginError.style.color = '#b42318';
+    loginError.style.background = '#fff1f0';
+  }
+
+  function loginLimpiarError(){
+    loginError.textContent = '';
+    loginError.style.display = 'none';
+  }
+
+  function loginMensajeError(error){
+    const codigo = error?.code || '';
+    const mensajes = {
+      'auth/invalid-credential': 'Correo o contraseña incorrectos.',
+      'auth/invalid-login-credentials': 'Correo o contraseña incorrectos.',
+      'auth/user-not-found': 'No existe un usuario con ese correo.',
+      'auth/wrong-password': 'La contraseña es incorrecta.',
+      'auth/too-many-requests': 'Demasiados intentos. Espera unos minutos y vuelve a intentar.',
+      'auth/invalid-email': 'El correo ingresado no es válido.',
+      'auth/network-request-failed': 'No hay conexión con Firebase. Revisa Internet.',
+      'auth/user-disabled': 'Este usuario está deshabilitado en Firebase.'
+    };
+    return mensajes[codigo] || ('No se pudo iniciar sesión: ' + (error?.message || 'error desconocido'));
+  }
 
   try {
     const app = initializeApp(firebaseConfig);
     db = getFirestore(app);
+    auth = getAuth(app);
     trabajadoresRef = collection(db, "trabajadores");
-    document.getElementById('bd-estado-conexion').textContent = '🟢 Conectado';
-    document.getElementById('bd-estado-conexion').classList.add('bd-conectado');
 
-    const q = query(trabajadoresRef, orderBy("nombre"));
-    onSnapshot(q, (snapshot) => {
-      listaCompleta = [];
-      snapshot.forEach((docSnap) => {
-        listaCompleta.push({ id: docSnap.id, ...docSnap.data() });
+    function iniciarEscuchaTrabajadores(){
+      if (unsubscribeTrabajadores) unsubscribeTrabajadores();
+      const estado = document.getElementById('bd-estado-conexion');
+      if (estado) {
+        estado.textContent = '🟢 Conectado como usuario autorizado';
+        estado.classList.add('bd-conectado');
+      }
+
+      const q = query(trabajadoresRef, orderBy("nombre"));
+      unsubscribeTrabajadores = onSnapshot(q, (snapshot) => {
+        listaCompleta = [];
+        snapshot.forEach((docSnap) => {
+          listaCompleta.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        bdRenderizarTabla(listaCompleta);
+        window.bdListaTrabajadores = listaCompleta;
+        if (window.amActualizarListaTrabajadores) window.amActualizarListaTrabajadores(listaCompleta);
+      }, (error) => {
+        if (estado) estado.textContent = '🔴 Error de conexión: ' + error.message;
       });
-      bdRenderizarTabla(listaCompleta);
-      window.bdListaTrabajadores = listaCompleta;
-      if (window.amActualizarListaTrabajadores) window.amActualizarListaTrabajadores(listaCompleta);
-    }, (error) => {
-      document.getElementById('bd-estado-conexion').textContent = '🔴 Error de conexión: ' + error.message;
+    }
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        document.body.classList.remove('auth-bloqueado');
+        loginPantalla.style.display = 'none';
+        loginActivo.style.display = 'flex';
+        loginCorreoActivo.textContent = user.email || 'Usuario autorizado';
+        loginLimpiarError();
+        iniciarEscuchaTrabajadores();
+      } else {
+        document.body.classList.add('auth-bloqueado');
+        loginPantalla.style.display = 'flex';
+        loginActivo.style.display = 'none';
+        if (unsubscribeTrabajadores) {
+          unsubscribeTrabajadores();
+          unsubscribeTrabajadores = null;
+        }
+        listaCompleta = [];
+        window.bdListaTrabajadores = [];
+      }
     });
   } catch (e) {
-    document.getElementById('bd-estado-conexion').textContent = '🔴 Firebase no está configurado todavía';
+    console.error(e);
+    loginMostrarError('No se pudo inicializar Firebase: ' + e.message);
   }
+
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    loginLimpiarError();
+    loginBtn.disabled = true;
+    loginBtn.textContent = '⏳ Ingresando...';
+    try {
+      await signInWithEmailAndPassword(auth, loginEmail.value.trim(), loginPassword.value);
+      loginPassword.value = '';
+    } catch (error) {
+      loginMostrarError(loginMensajeError(error));
+    } finally {
+      loginBtn.disabled = false;
+      loginBtn.textContent = '🔓 Ingresar al sistema';
+    }
+  });
+
+  loginRecuperar.addEventListener('click', async () => {
+    const correo = loginEmail.value.trim();
+    loginLimpiarError();
+    if (!correo) {
+      loginMostrarError('Primero escribe tu correo para enviar el enlace de recuperación.');
+      loginEmail.focus();
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, correo);
+      loginError.style.display = 'block';
+      loginError.style.color = '#146c2e';
+      loginError.style.background = '#edf9f0';
+      loginError.textContent = 'Se envió un enlace de recuperación al correo indicado.';
+    } catch (error) {
+      loginMostrarError(loginMensajeError(error));
+    }
+  });
+
+  loginSalir.addEventListener('click', async () => {
+    await signOut(auth);
+  });
 
   // Nómina oficial cargada desde "NOMINA CSAH V2.xlsx" (101 funcionarios)
   const nominaCSAH = [{"rut":"18.326.116-9","nombre":"AGUILAR DUARTE BARBARA DADESKA","cargo":"Docente Nocturna","sindicato":"CSAH","horas":"28 horas"},{"rut":"15.417.679-9","nombre":"ALIAGA SOTELO KARIN XIMENA","cargo":"Coordinadora ciclo","sindicato":"CSAH","horas":"44 horas"},{"rut":"10.609.681-3","nombre":"ANGULO MOLINA ELIZABETH DEL ROSARIO","cargo":"Directora academica","sindicato":"CSAH","horas":"44 horas"},{"rut":"12.864.437-7","nombre":"ARANCIBIA FAUNES CANDY MABEL","cargo":"Auxiliar de Servicios","sindicato":"CSAH","horas":"44 horas"},{"rut":"17.340.446-8","nombre":"ARIAS VEGA CAMILA BETZABE","cargo":"Docente","sindicato":"HISTORICO","horas":"39 horas"},{"rut":"26.321.810-8","nombre":"ARZOLAY WEKY MAIGUALIDA LAODICEA","cargo":"Docente","sindicato":"CSAH","horas":"40 horas"},{"rut":"20.396.894-9","nombre":"BAQUEDANO PEREZ JAVIERA PAZ","cargo":"Psicologa","sindicato":"CSAH","horas":"30 horas"},{"rut":"19.709.867-8","nombre":"BECERRA VARGAS FELIPE ANDRES","cargo":"Docente","sindicato":"CSAH","horas":"44 horas"},{"rut":"19.955.752-1","nombre":"BERGER VARGAS LUKAS NICOLAY","cargo":"Docente","sindicato":"CSAH","horas":"27 horas"},{"rut":"15.383.828-3","nombre":"BUSTOS VALENZUELA KAREN MARLEN","cargo":"Ed. Parvulos","sindicato":"CSAH","horas":"33 horas"},{"rut":"17.231.096-6","nombre":"CABALLERO GUERRERO YESSENIA PAOLA","cargo":"Paradocente","sindicato":"CSAH","horas":"44 horas"},{"rut":"13.829.390-4","nombre":"CABEZAS ORTIZ DE ZARATE MARCELO ANDRES","cargo":"Docente","sindicato":"CSAH","horas":""},{"rut":"20.496.622-2","nombre":"CACERES JIMENEZ JAVIERA DENISSE","cargo":"Ed. Diferencial","sindicato":"HISTORICO","horas":"44 horas"},{"rut":"20.242.488-0","nombre":"CAMPOS MENESES DOMINIQUE JAVIERA","cargo":"Terapeuta Ocupacional","sindicato":"HISTORICO","horas":"40 horas"},{"rut":"10.811.819-9","nombre":"CAÑAS DE LA CRUZ TUMBA INGRID LORENA","cargo":"Coordinadora de ciclo","sindicato":"HISTORICO","horas":"44 horas"},{"rut":"15.350.052-5","nombre":"CASANOVA FUENZALIDA CAROLINA BEATRIZ","cargo":"Secretaria","sindicato":"HISTORICO","horas":"44 horas"},{"rut":"13.693.286-1","nombre":"CASTILLO MOSCOSO MANUEL ANTONIO","cargo":"Rector","sindicato":"CSAH","horas":"art 22"},{"rut":"20.891.498-7","nombre":"CASTRO CID DAFFNNE VALENTINA ESPAÑA","cargo":"Docente","sindicato":"CSAH","horas":"30 horas"},{"rut":"19.583.572-1","nombre":"CASTRO FARIAS FELIPE ESTEBAN","cargo":"Docente","sindicato":"CSAH","horas":"44 horas"},{"rut":"19.649.546-0","nombre":"CISTERNAS GARRIDO MERYANN PATRICIA","cargo":"Asistente de parvulos","sindicato":"CSAH","horas":"30 horas"},{"rut":"12.644.882-1","nombre":"CONTRERAS CASTRO MARCIA DEL CARMEN","cargo":"Auxiliar de Servicios","sindicato":"CSAH","horas":"40 horas"},{"rut":"12.270.025-9","nombre":"CORONADO CARREÑO CAROLINA YOLANDA","cargo":"Asistente Cra","sindicato":"HISTORICO","horas":"44 horas"},{"rut":"9.903.624-9","nombre":"CORREA ORTEGA MABEL ALEJANDRA","cargo":"Auxiliar de Servicios","sindicato":"CSAH","horas":"40 horas"},{"rut":"19.313.482-3","nombre":"CUBILLO LLANTEN MARIA ISABEL","cargo":"Asistente de Aula","sindicato":"CSAH","horas":"30 horas"},{"rut":"11.975.345-7","nombre":"CUBILLOS ARAYA XIMENA ANDREA","cargo":"Auxiliar de Servicios","sindicato":"CSAH","horas":"44 horas"},{"rut":"17.942.739-7","nombre":"DEL PINO LARA CATHERINE FERNANDA","cargo":"Docente","sindicato":"CSAH","horas":"44 horas"},{"rut":"17.374.327-0","nombre":"DIAZ MUÑOZ ESTEFANY AMELIA","cargo":"Ed. Diferencial","sindicato":"HISTORICO","horas":"44 horas"},{"rut":"18.949.277-4","nombre":"DONOSO ANDANA  NICOLAS IGNACIO","cargo":"TICS","sindicato":"CSAH","horas":"44 horas"},{"rut":"12.123.629-K","nombre":"DURAN PEREZ CLAUDIA PATRICIA","cargo":"Asistente de aula","sindicato":"CSAH","horas":"38  horas"},{"rut":"14.144.435-2","nombre":"FIGUEROA TORO FRANKLIN ALVARO","cargo":"Docente","sindicato":"CSAH","horas":"44 horas"},{"rut":"11.874.751-8","nombre":"FLORES HERNANDEZ JESSICA ORIETA","cargo":"Secretaria","sindicato":"HISTORICO","horas":"44 horas"},{"rut":"15.454.585-9","nombre":"FRIAS BARRIOS CYNTHIA SOFIA","cargo":"Coordinadora Pie","sindicato":"HISTORICO","horas":"44 horas"},{"rut":"20.288.017-7","nombre":"FUENTES ROMERO PATRICIA ANTONIETA","cargo":"Docente","sindicato":"CSAH","horas":"44 horas"},{"rut":"26.065.836-0","nombre":"GODOY ALMEA JESUS ALBERTO","cargo":"Director pastoral","sindicato":"CSAH","horas":"art 22"},{"rut":"16.313.261-3","nombre":"GONZALEZ BARRIGA FRANCISCO ANDRES","cargo":"Docente","sindicato":"CSAH","horas":"44 horas"},{"rut":"11.296.177-1","nombre":"GONZALEZ VERA JESSICA DE LAS MERCEDES","cargo":"Docente","sindicato":"CSAH","horas":"44 horas"},{"rut":"14.334.846-6","nombre":"GUERRERO MARAMBIO RODRIGO ANDRE","cargo":"Docente Nocturna","sindicato":"CSAH","horas":"30 horas"},{"rut":"9.788.560-5","nombre":"GUTIERREZ ARAVENA BIELKA IRINA","cargo":"Ed. Diferencial","sindicato":"HISTORICO","horas":"40 horas"},{"rut":"13.769.609-6","nombre":"GUTIERREZ BECERRA ALEJANDRA CAROLINA","cargo":"Auxiliar de Servicios","sindicato":"CSAH","horas":"42 horas"},{"rut":"14.277.541-7","nombre":"GUTIERREZ BUSTAMANTE MARIA ERNESTINA","cargo":"Auxiliar de Servicios","sindicato":"CSAH","horas":"44 horas"},{"rut":"13.465.759-6","nombre":"GUTIERREZ MONSALVE MARIA CECILIA","cargo":"Asistente de Aula","sindicato":"HISTORICO","horas":"44 horas"},{"rut":"14.430.654-6","nombre":"GUTIERREZ RIVAS JACQUELINE DEL CARMEN","cargo":"Auxiliar de Servicios","sindicato":"CSAH","horas":"44 horas"},{"rut":"19.522.593-1","nombre":"LAGOS ECHEVERRIA CAMILA FERNANDA","cargo":"Fonoaudiologa","sindicato":"CSAH","horas":"42 horas"},{"rut":"17.303.324-9","nombre":"LLANILLOS CORVALAN VANESSA ALEJANDRA","cargo":"Docente","sindicato":"CSAH","horas":"44 horas"},{"rut":"7.094.175-9","nombre":"LOPEZ FERREIRA ALEJANDRO JACOB","cargo":"Coordinador Nocturna","sindicato":"CSAH","horas":"30 horas"},{"rut":"19.164.495-6","nombre":"LOPEZ PIZARRO BASTIAN ALEJANDRO","cargo":"Docente","sindicato":"CSAH","horas":"44 horas"},{"rut":"18.127.653-3","nombre":"LOPEZ VALERO JOHANNA MARAL","cargo":"Psicopedagogo","sindicato":"CSAH","horas":"44 horas"},{"rut":"17.411.342-4","nombre":"LUCO LARA MARIA FERNANDA","cargo":"Ed. Diferencial","sindicato":"HISTORICO","horas":"44 horas"},{"rut":"26.444.219-2","nombre":"MACHUCA RODRIGUEZ ROBERTO ANTONIO","cargo":"Docente","sindicato":"CSAH","horas":"44 horas"},{"rut":"8.336.349-5","nombre":"MANRIQUEZ MORALES HUGO ADOLFO","cargo":"Docente Nocturna","sindicato":"CSAH","horas":"28 horas"},{"rut":"19.164.227-9","nombre":"MANRIQUEZ ORTIZ SEBASTIAN GABRIEL","cargo":"Docente","sindicato":"CSAH","horas":"44 horas"},{"rut":"18.864.644-1","nombre":"MARDONES MIRANDA CAMILA ANDREA","cargo":"Psicologa","sindicato":"CSAH","horas":"42 horas"},{"rut":"16.800.617-9","nombre":"MARIN NAVARRETE LAURA CRISTINA","cargo":"Ed. Diferencial","sindicato":"HISTORICO","horas":"44 horas"},{"rut":"19.792.690-2","nombre":"MATELUNA ZUÑIGA DIEGO NICOLAS DIEGO","cargo":"Docente","sindicato":"CSAH","horas":"38  horas"},{"rut":"19.528.811-9","nombre":"MERA CONCHA SYBELLE ATENAS","cargo":"Docente","sindicato":"CSAH","horas":"40 horas"},{"rut":"9.614.606-K","nombre":"MEZA GUZMAN VERONICA DEL CARMEN","cargo":"Auxiliar de Servicios","sindicato":"CSAH","horas":"44 horas"},{"rut":"12.873.678-6","nombre":"MEZA VALENZUELA MARIBEL DEL CARMEN","cargo":"Docente","sindicato":"HISTORICO","horas":"35 horas"},{"rut":"13.460.410-7","nombre":"MORA PARRA MARCELA ALEJANDRA","cargo":"Directora de Recursos","sindicato":"CSAH","horas":"44 horas"},{"rut":"13.672.577-7","nombre":"MORAGA MAIPIL MARIA SOLEDAD","cargo":"Docente","sindicato":"CSAH","horas":"43 horas"},{"rut":"26.337.477-0","nombre":"MORENO GONZALEZ HUGO JOSE","cargo":"Docente","sindicato":"CSAH","horas":"44 horas"},{"rut":"8.040.581-2","nombre":"NAVARRETE BRICEÑO SUSANA","cargo":"Docente","sindicato":"CSAH","horas":"39 horas"},{"rut":"7.436.882-4","nombre":"NAVARRETE BRICEÑO VIVIANA FLOR","cargo":"Docente","sindicato":"CSAH","horas":"39 horas"},{"rut":"16.810.297-6","nombre":"NAVARRO ORMAZABAL ANAIN STEPHANY","cargo":"Ed. Parvulos","sindicato":"CSAH","horas":"33 horas"},{"rut":"20.086.880-3","nombre":"OJEDA ARAYA SEBASTIAN FABRIZIO","cargo":"Docente","sindicato":"CSAH","horas":"44 horas"},{"rut":"20.534.786-0","nombre":"ORDENES DURAN BASTIAN PATRICIO","cargo":"Docente","sindicato":"HISTORICO","horas":"34 horas"},{"rut":"17.707.974-k","nombre":"ORELLANA DUPRY CONSTANZA NATALIA","cargo":"Docente","sindicato":"CSAH","horas":"33 horas"},{"rut":"19.643.835-1","nombre":"ORMEÑO LOBOS DENISSE VERONICA","cargo":"Ed. Diferencial","sindicato":"HISTORICO","horas":"44 horas"},{"rut":"19.035.754-6","nombre":"OROZCO DONOSO AYLEEN BARBARA","cargo":"Ed. Diferencial","sindicato":"HISTORICO","horas":"44 horas"},{"rut":"11.770.488-2","nombre":"ORTEGA VASQUEZ EUGENIA DEL PILAR","cargo":"Paradocente","sindicato":"CSAH","horas":"40 horas"},{"rut":"19.829.959-6","nombre":"OSORIO BERNAL CAROLINA AYLIN","cargo":"Ed. Diferencial","sindicato":"CSAH","horas":"44 horas"},{"rut":"15.174.572-5","nombre":"PAREDES FIGUEROA DANIEL FELIPE","cargo":"Docente","sindicato":"CSAH","horas":"44 horas"},{"rut":"19.221.712-1","nombre":"PAVEZ BRAVO JUAN MANUEL","cargo":"Asistente Recursos","sindicato":"CSAH","horas":"30 horas"},{"rut":"15.915.382-7","nombre":"PEÑA DIAZ KARINA JOCELYN","cargo":"Docente","sindicato":"CSAH","horas":"44 horas"},{"rut":"17.840.401-6","nombre":"PEREZ FLORES FRANCISCA DEL CARMEN","cargo":"Psicopedagogo","sindicato":"CSAH","horas":"44 horas"},{"rut":"11.298.704-5","nombre":"PEREZ GORIGOYTIA SUSANA VALESKA","cargo":"Secretaria","sindicato":"CSAH","horas":"44 horas"},{"rut":"16.398.207-2","nombre":"PILLANCAR CASTILLO INGRID SILVANA","cargo":"Directora de Convivencia","sindicato":"CSAH","horas":"44 horas"},{"rut":"19.360.997-K","nombre":"PINO ZAGAL JAVIERA MONSERRAT","cargo":"Docente","sindicato":"CSAH","horas":"44 horas"},{"rut":"17.339.564-7","nombre":"PLAZA RODRIGUEZ CATALINA TERCILA","cargo":"Docente","sindicato":"CSAH","horas":"39 horas"},{"rut":"13.763.638-7","nombre":"RAMIREZ ESPEJO MARIA VICTORIA","cargo":"Ed. Diferencial","sindicato":"CSAH","horas":"44 horas"},{"rut":"16.114.554-8","nombre":"RETAMALES CONTRERAS CLAUDIA ESTER","cargo":"Asistente de aula","sindicato":"HISTORICO","horas":"38  horas"},{"rut":"16.235.360-8","nombre":"RIQUELME MARDONES ESTEBAN IGNACIO","cargo":"Docente","sindicato":"CSAH","horas":"44 horas"},{"rut":"20.031.107-8","nombre":"ROJAS URRA JAVIERA ANDREA","cargo":"Asistente de aula","sindicato":"CSAH","horas":"35 horas"},{"rut":"17.840.966-2","nombre":"ROMAN MONTECINOS LOREDANA  RITA","cargo":"Tec. Parvulos","sindicato":"CSAH","horas":"30 horas"},{"rut":"19.794.101-4","nombre":"ROMERO SANCHEZ YERKA ALEJANDRA","cargo":"Asistente de aula","sindicato":"HISTORICO","horas":"40 horas"},{"rut":"7.366.180-3","nombre":"SANTIBAÑEZ CERDA DANIEL ERNESTO","cargo":"Docente","sindicato":"HISTORICO","horas":"44 horas"},{"rut":"20.499.572-9","nombre":"SEGOVIA MAGAÑA ISIDORA ESTEFANIA","cargo":"Tec. Parvulos","sindicato":"CSAH","horas":"30 horas"},{"rut":"26.903.457-2","nombre":"SEIJAS ESPINOZA ANDRES ALBERTO","cargo":"Docente","sindicato":"CSAH","horas":"24 horas"},{"rut":"12.261.136-1","nombre":"SILVA JAQUE SONIA GABRIELA","cargo":"Docente","sindicato":"CSAH","horas":"35 horas"},{"rut":"10.518.977-K","nombre":"SOTO ESCUDEL ROSA SORAYA","cargo":"Auxiliar de Servicios","sindicato":"CSAH","horas":"44 horas"},{"rut":"18.950.032-7","nombre":"SUAREZ LOBOS CAROLINA ANDREA","cargo":"Ed. Diferencial","sindicato":"HISTORICO","horas":"44 horas"},{"rut":"17.324.933-0","nombre":"TELL VERA SYLVIA TERESA","cargo":"Docente","sindicato":"CSAH","horas":"44 horas"},{"rut":"26.534.926-9","nombre":"TORRES PAUBLINI DOMILENNYS DEL CARMEN","cargo":"Docente Nocturna","sindicato":"CSAH","horas":"24 hotas"},{"rut":"20.204.030-6","nombre":"URBINA CIFUENTES KATTY ALEJANDRA","cargo":"Docente","sindicato":"CSAH","horas":"44 horas"},{"rut":"12.633.566-0","nombre":"VALENCIA MERINO SOLANGE ALEJANDRA","cargo":"Paradocente","sindicato":"CSAH","horas":"40 horas"},{"rut":"18.079.661-4","nombre":"VARGAS PALMA FRANCISCA ALEJANDRA","cargo":"Paradocente","sindicato":"CSAH","horas":"40 horas"},{"rut":"18.090.481-6","nombre":"VEGA MELENDEZ RODRIGO IGNACIO","cargo":"Docente","sindicato":"CSAH","horas":"44 horas"},{"rut":"10.682.822-9","nombre":"VERA CARRASCO CECILIA PROSPERINA","cargo":"Docente","sindicato":"CSAH","horas":"33 horas"},{"rut":"22.843.162-1","nombre":"VERANO NEYRA ROCIO CAROLINA","cargo":"Asistente de Pastoral","sindicato":"CSAH","horas":"8 horas"},{"rut":"16.931.642-2","nombre":"VIRA PEREZ GONZALO JAVIER","cargo":"Paradocente","sindicato":"CSAH","horas":"44 horas"},{"rut":"16.457.870-4","nombre":"YAÑEZ LILLO SANDRA ELIZABETH","cargo":"Tec. Enfermeria","sindicato":"CSAH","horas":"44 horas"},{"rut":"18.663.521-3","nombre":"YAÑEZ NAVARRETE NICOLAS EDUARDO","cargo":"Asistente Social","sindicato":"CSAH","horas":"44 horas"}];
