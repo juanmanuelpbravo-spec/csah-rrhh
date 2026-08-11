@@ -23,53 +23,87 @@
     color:var(--texto);
   }
 
-  /* ============ DASHBOARD / MENU ============ */
+  /* ============ DASHBOARD PRO ============ */
   #vista-inicio{
     min-height:100vh;
     display:flex;
-    align-items:center;
-    justify-content:center;
-    padding:40px 20px;
+    background:#f5f7fb;
+    color:var(--texto);
     position:relative;
   }
-  .boton-bd-esquina{
-    position:absolute;
-    top:18px;
-    right:18px;
-    background:#fff;
-    border:1px solid var(--gris-borde);
-    color:var(--texto-suave);
-    font-size:12px;
-    font-weight:600;
-    padding:7px 12px;
-    border-radius:20px;
-    cursor:pointer;
-    letter-spacing:.2px;
+  .dashboard-shell{width:100%;min-height:100vh;display:grid;grid-template-columns:270px minmax(0,1fr);}
+  .dashboard-sidebar{
+    background:linear-gradient(180deg,#132444 0%,#0f1c35 100%);
+    color:#fff;padding:26px 18px 20px;display:flex;flex-direction:column;
+    min-height:100vh;position:sticky;top:0;align-self:start;
+    box-shadow:8px 0 30px rgba(19,36,68,.08);
   }
-  .boton-bd-esquina:hover{ border-color:var(--azul); color:var(--azul-oscuro); }
-  @media (max-width:640px){
-    .boton-bd-esquina{ top:10px; right:10px; font-size:11px; padding:6px 10px; }
+  .brand{display:flex;align-items:center;gap:12px;padding:4px 10px 26px;border-bottom:1px solid rgba(255,255,255,.10);}
+  .brand-mark{width:42px;height:42px;border-radius:12px;background:linear-gradient(145deg,#e8ab2e,#f4c85c);display:flex;align-items:center;justify-content:center;color:#132444;font-size:21px;font-weight:900;box-shadow:0 6px 18px rgba(232,171,46,.20);}
+  .brand-copy strong{display:block;font-size:15px;letter-spacing:.2px;}
+  .brand-copy span{display:block;font-size:10.5px;color:rgba(255,255,255,.62);margin-top:3px;letter-spacing:.5px;text-transform:uppercase;}
+  .sidebar-section{margin:26px 8px 9px;font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.42);}
+  .sidebar-nav{display:flex;flex-direction:column;gap:5px;}
+  .sidebar-item{width:100%;border:1px solid transparent;background:transparent;color:rgba(255,255,255,.82);border-radius:10px;padding:11px 12px;display:flex;align-items:center;gap:11px;text-align:left;cursor:pointer;font:inherit;transition:.15s ease;}
+  .sidebar-item:hover{background:rgba(255,255,255,.08);color:#fff;transform:translateX(2px);}
+  .sidebar-item .nav-icon{width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-size:16px;flex:0 0 auto;}
+  .sidebar-item strong{font-size:12.5px;font-weight:700;display:block;}
+  .sidebar-item small{font-size:10px;color:rgba(255,255,255,.45);display:block;margin-top:2px;}
+  .sidebar-item-admin{background:rgba(232,171,46,.10);border-color:rgba(232,171,46,.24);}
+  .sidebar-item-admin .nav-icon{background:#e8ab2e;color:#132444;}
+  .sidebar-bottom{margin-top:auto;padding-top:18px;border-top:1px solid rgba(255,255,255,.10);}
+  .sidebar-security{display:flex;gap:9px;align-items:center;padding:10px 10px;color:rgba(255,255,255,.58);font-size:10.5px;line-height:1.35;}
+  .sidebar-security .dot{width:8px;height:8px;border-radius:50%;background:#3bc36b;box-shadow:0 0 0 4px rgba(59,195,107,.10);flex:0 0 auto;}
+
+  .dashboard-main{min-width:0;padding:34px 42px 50px;}
+  .dashboard-top{max-width:1240px;margin:0 auto 28px;display:flex;justify-content:space-between;align-items:flex-start;gap:20px;}
+  .dashboard-kicker{font-size:10.5px;text-transform:uppercase;letter-spacing:1.3px;font-weight:800;color:#9b6d08;margin-bottom:8px;}
+  .dashboard-title{margin:0;color:#132444;font-size:31px;line-height:1.15;letter-spacing:-.5px;}
+  .dashboard-subtitle{margin:9px 0 0;color:#687286;font-size:13.5px;max-width:700px;line-height:1.55;}
+  .dashboard-profile{background:#fff;border:1px solid #e0e5ed;border-radius:14px;padding:10px 13px;display:flex;align-items:center;gap:10px;box-shadow:0 5px 18px rgba(19,36,68,.05);min-width:210px;}
+  .profile-avatar{width:36px;height:36px;border-radius:10px;background:#e9eef8;color:#18345e;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;}
+  .profile-copy{min-width:0;}
+  .profile-copy strong{display:block;font-size:11.5px;color:#1a2a46;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px;}
+  .profile-copy span{display:block;font-size:10px;color:#738096;margin-top:2px;}
+
+  .dashboard-content{max-width:1240px;margin:0 auto;}
+  .section-label{display:flex;align-items:center;justify-content:space-between;margin:0 0 12px;}
+  .section-label h2{margin:0;font-size:14px;color:#1b2d4d;letter-spacing:.1px;}
+  .section-label span{font-size:10.5px;color:#8a94a6;}
+  .document-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;}
+  .document-card{background:#fff;border:1px solid #e0e5ed;border-radius:16px;padding:24px;min-height:190px;cursor:pointer;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 5px 20px rgba(19,36,68,.045);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;}
+  .document-card:hover{transform:translateY(-3px);border-color:#cbd4e3;box-shadow:0 14px 32px rgba(19,36,68,.10);}
+  .document-icon{width:46px;height:46px;border-radius:12px;background:#edf2fa;color:#17355f;display:flex;align-items:center;justify-content:center;font-size:21px;}
+  .document-card h3{margin:20px 0 7px;font-size:17px;color:#142744;}
+  .document-card p{margin:0;color:#6e788a;font-size:12px;line-height:1.55;max-width:440px;}
+  .document-link{margin-top:20px;font-size:11.5px;font-weight:800;color:#bd8613;letter-spacing:.2px;}
+  .dashboard-info{margin-top:24px;display:grid;grid-template-columns:1.3fr .7fr;gap:18px;}
+  .info-panel{background:#fff;border:1px solid #e0e5ed;border-radius:16px;padding:18px 20px;box-shadow:0 5px 20px rgba(19,36,68,.035);}
+  .info-panel h3{margin:0 0 6px;font-size:12.5px;color:#1b2d4d;}
+  .info-panel p{margin:0;font-size:11.5px;line-height:1.55;color:#788397;}
+  .config-note{display:flex;align-items:center;gap:12px;}
+  .config-note .mini-icon{width:38px;height:38px;border-radius:10px;background:#fff6df;color:#a36d00;display:flex;align-items:center;justify-content:center;font-size:18px;}
+  .dashboard-foot{max-width:1240px;margin:26px auto 0;color:#9aa3b2;font-size:10px;display:flex;justify-content:space-between;gap:10px;}
+
+  @media(max-width:980px){
+    .dashboard-shell{grid-template-columns:220px minmax(0,1fr);}
+    .dashboard-main{padding:28px 24px 40px;}
+    .dashboard-top{flex-direction:column;}
+    .dashboard-profile{align-self:stretch;}
   }
-  .contenedor-inicio{ max-width:840px; width:100%; text-align:center; }
-  .encabezado-inicio{ margin-bottom:44px; }
-  .encabezado-inicio h1{ font-size:26px; color:var(--azul-oscuro); margin:0 0 8px; }
-  .encabezado-inicio p{ font-size:14px; color:var(--texto-suave); margin:0; }
-  .tarjetas{ display:grid; grid-template-columns:1fr 1fr; gap:24px; }
-  .tarjeta{
-    background:#fff; border:1px solid var(--gris-borde); border-radius:14px;
-    padding:32px 26px; cursor:pointer; color:var(--texto);
-    display:flex; flex-direction:column; align-items:center; gap:14px;
-    transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+  @media(max-width:760px){
+    .dashboard-shell{display:block;}
+    .dashboard-sidebar{position:relative;min-height:auto;padding:14px 14px 12px;}
+    .brand{padding:4px 8px 14px;}
+    .sidebar-section,.sidebar-nav .sidebar-item small,.sidebar-bottom{display:none;}
+    .sidebar-nav{flex-direction:row;overflow-x:auto;padding-top:10px;}
+    .sidebar-item{min-width:max-content;padding:8px 10px;}
+    .sidebar-item .nav-icon{width:27px;height:27px;}
+    .dashboard-main{padding:24px 16px 35px;}
+    .dashboard-title{font-size:25px;}
+    .document-grid,.dashboard-info{grid-template-columns:1fr;}
+    .dashboard-foot{display:none;}
   }
-  .tarjeta:hover{ transform:translateY(-3px); box-shadow:0 10px 28px rgba(19,36,68,0.12); border-color:var(--azul); }
-  .icono-tarjeta{
-    width:60px; height:60px; border-radius:50%; background:var(--azul-oscuro); color:#fff;
-    display:flex; align-items:center; justify-content:center; font-size:26px;
-  }
-  .tarjeta h2{ font-size:17px; margin:0; color:var(--azul-oscuro); }
-  .tarjeta p{ font-size:12.5px; color:var(--texto-suave); margin:0; line-height:1.5; }
-  .etiqueta-boton{ margin-top:6px; font-size:12.5px; font-weight:700; color:var(--dorado); letter-spacing:.3px; }
-  @media (max-width:900px){ .tarjetas{ grid-template-columns:1fr; } }
 
   /* ============ HERRAMIENTAS (compartido) ============ */
   .layout{ display:grid; grid-template-columns:380px 1fr; min-height:100vh; }
@@ -311,28 +345,108 @@
 
 <!-- ===================== VISTA: INICIO / DASHBOARD ===================== -->
 <div id="vista-inicio">
-  <div class="contenedor-inicio">
-    <div class="encabezado-inicio">
-      <h1>Documentos de Recursos Humanos</h1>
-      <p>Colegio San Alberto Hurtado — Red Educacional Santo Tomás de Aquino</p>
-    </div>
-    <div class="tarjetas">
-      <div class="tarjeta" onclick="mostrarVista('vista-amonestacion')">
-        <div class="icono-tarjeta">📄</div>
-        <h2>Carta de Amonestación</h2>
-        <p>Genera una carta de amonestación por atrasos de marcaje, lista para imprimir o descargar en PDF.</p>
-        <div class="etiqueta-boton">Abrir herramienta →</div>
+  <div class="dashboard-shell">
+    <aside class="dashboard-sidebar">
+      <div class="brand">
+        <div class="brand-mark">CS</div>
+        <div class="brand-copy">
+          <strong>RR.HH. CSAH</strong>
+          <span>Gestión de personas</span>
+        </div>
       </div>
-      <div class="tarjeta" onclick="mostrarVista('vista-acta')">
-        <div class="icono-tarjeta">📝</div>
-        <h2>Acta de Entrevista</h2>
-        <p>Genera un acta de entrevista a estudiante, apoderado o docente, lista para imprimir o descargar en PDF.</p>
-        <div class="etiqueta-boton">Abrir herramienta →</div>
+
+      <div class="sidebar-section">Documentos</div>
+      <nav class="sidebar-nav">
+        <button class="sidebar-item" type="button" onclick="mostrarVista('vista-amonestacion')">
+          <span class="nav-icon">📄</span>
+          <span><strong>Carta de Amonestación</strong><small>Generar documento</small></span>
+        </button>
+        <button class="sidebar-item" type="button" onclick="mostrarVista('vista-acta')">
+          <span class="nav-icon">📝</span>
+          <span><strong>Acta de Entrevista</strong><small>Generar documento</small></span>
+        </button>
+      </nav>
+
+      <div class="sidebar-section">Configuración</div>
+      <nav class="sidebar-nav">
+        <button class="sidebar-item" id="menu-bd" type="button" onclick="mostrarVista('vista-bd')">
+          <span class="nav-icon">🗂️</span>
+          <span><strong>Base de Datos</strong><small>Funcionarios y nómina</small></span>
+        </button>
+        <button class="sidebar-item sidebar-item-admin" id="tarjeta-admin" type="button" style="display:none" onclick="mostrarVista('vista-admin')">
+          <span class="nav-icon">⚙️</span>
+          <span><strong>Administración</strong><small>Usuarios y permisos</small></span>
+        </button>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <div class="sidebar-security"><span class="dot"></span><span>Sistema protegido<br>con Firebase Authentication</span></div>
       </div>
-    </div>
+    </aside>
+
+    <main class="dashboard-main">
+      <header class="dashboard-top">
+        <div>
+          <div class="dashboard-kicker">Centro de Recursos Humanos</div>
+          <h1 class="dashboard-title">Documentos de Recursos Humanos</h1>
+          <p class="dashboard-subtitle">Colegio San Alberto Hurtado — Red Educacional Santo Tomás de Aquino. Selecciona una herramienta para comenzar.</p>
+        </div>
+        <div class="dashboard-profile">
+          <div class="profile-avatar">👤</div>
+          <div class="profile-copy">
+            <strong id="dashboard-perfil-nombre">Usuario autorizado</strong>
+            <span id="dashboard-perfil-rol">Sesión activa</span>
+          </div>
+        </div>
+      </header>
+
+      <section class="dashboard-content">
+        <div class="section-label">
+          <h2>Herramientas principales</h2>
+          <span>Documentación RR.HH.</span>
+        </div>
+
+        <div class="document-grid">
+          <article class="document-card" onclick="mostrarVista('vista-amonestacion')">
+            <div>
+              <div class="document-icon">📄</div>
+              <h3>Carta de Amonestación</h3>
+              <p>Genera cartas de amonestación por atrasos de marcaje, listas para revisar, imprimir o descargar en PDF.</p>
+            </div>
+            <div class="document-link">Abrir herramienta →</div>
+          </article>
+
+          <article class="document-card" onclick="mostrarVista('vista-acta')">
+            <div>
+              <div class="document-icon">📝</div>
+              <h3>Acta de Entrevista</h3>
+              <p>Prepara actas de entrevista para estudiantes, apoderados o docentes, listas para imprimir o descargar.</p>
+            </div>
+            <div class="document-link">Abrir herramienta →</div>
+          </article>
+        </div>
+
+        <div class="dashboard-info">
+          <div class="info-panel">
+            <h3>Espacio de trabajo</h3>
+            <p>Las herramientas de configuración se mantienen separadas de los documentos para que el panel principal sea más limpio y rápido de usar.</p>
+          </div>
+          <div class="info-panel config-note">
+            <div class="mini-icon">⚙️</div>
+            <div>
+              <h3>Configuración del sistema</h3>
+              <p>Base de datos y administración están disponibles en el menú lateral según tus permisos.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-foot">
+          <span>CSAH · Recursos Humanos</span>
+          <span>Plataforma interna</span>
+        </div>
+      </section>
+    </main>
   </div>
-  <button class="boton-bd-esquina" onclick="mostrarVista('vista-bd')" title="Base de datos de trabajadores">🗂️ Base de Datos</button>
-  <button id="boton-admin" class="boton-bd-esquina" style="right:145px;display:none" onclick="mostrarVista('vista-admin')" title="Administración">⚙️ Administración</button>
 </div>
 
 <!-- ===================== VISTA: ADMINISTRACIÓN ===================== -->
@@ -639,6 +753,7 @@
   const loginCorreoActivo = document.getElementById('login-correo-activo');
   const loginSalir = document.getElementById('login-salir');
   const botonAdmin = document.getElementById('boton-admin');
+  const tarjetaAdmin = document.getElementById('tarjeta-admin');
 
   function loginMostrarError(mensaje){
     loginError.textContent = mensaje;
@@ -703,7 +818,14 @@
       const snap = await getDoc(ref);
       perfilActual = snap.exists() ? { id: snap.id, ...snap.data() } : null;
       const esAdmin = perfilActual?.rol === 'admin' && perfilActual?.estado !== 'inactivo';
-      botonAdmin.style.display = esAdmin ? 'block' : 'none';
+      if (botonAdmin) botonAdmin.style.display = esAdmin ? 'inline-block' : 'none';
+      if (tarjetaAdmin) tarjetaAdmin.style.display = esAdmin ? 'flex' : 'none';
+      const dashPerfil = document.getElementById('dashboard-perfil');
+      if (dashPerfil) dashPerfil.textContent = perfilActual?.nombre ? `👤 ${perfilActual.nombre} · ${perfilActual.rol === 'admin' ? '👑 ADMINISTRADOR' : (perfilActual.rol || '').toUpperCase()}` : '';
+      const dashNombre = document.getElementById('dashboard-perfil-nombre');
+      const dashRol = document.getElementById('dashboard-perfil-rol');
+      if (dashNombre) dashNombre.textContent = perfilActual?.nombre || user.email || 'Usuario autorizado';
+      if (dashRol) dashRol.textContent = perfilActual?.rol === 'admin' ? '👑 Administrador' : (perfilActual?.rol === 'rrhh' ? '🧑‍💼 Recursos Humanos' : '👁️ Consulta');
       loginCorreoActivo.textContent = `${user.email || 'Usuario'}${perfilActual?.rol ? ' · ' + perfilActual.rol.toUpperCase() : ''}`;
       if (esAdmin) {
         document.getElementById('admin-usuario-activo').textContent = perfilActual.nombre || user.email || 'Administrador';
